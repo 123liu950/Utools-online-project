@@ -285,9 +285,9 @@ onMounted(() => {
 <style scoped>
 /* 样式部分无修改，保持原样 */
 .settings-page {
-  min-height: 100vh;
+  min-height: 100%;
   background-color: #f5f7fa;
-  padding: 20px;
+  padding: 10px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 

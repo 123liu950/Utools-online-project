@@ -76,9 +76,9 @@ onMounted(() => {
 
 <style scoped>
 .github-view {
-  max-width: 1000px;
-  margin: 20px auto;
-  padding: 0 20px;
+  min-height: 100%;
+  margin: 0px auto;
+  padding: 10px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 

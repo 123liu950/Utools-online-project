@@ -49,7 +49,6 @@
 
 .layout-main {
   flex: 1;
-  padding: 15px;
   overflow-y: auto;
 }
 </style>

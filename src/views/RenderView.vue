@@ -1,36 +1,15 @@
 <template>
   <div class="render-view">
-    <button @click="windowReload">重新加载</button>
     <!-- 顶部栏：标题 + 同步按钮 -->
     <div class="render-header">
       <h2 class="header-title">Render 项目列表</h2>
       <button
         class="sync-btn"
-        :disabled="loading || !renderToken || !isUtoolsEnv"
+        :disabled="loading || !isUtoolsEnv"
         @click="syncData"
       >
         <span v-if="loading" class="loading-icon"></span>
         {{ loading ? "同步中..." : "同步数据" }}
-      </button>
-    </div>
-
-    <!-- Token 配置区域（优化样式） -->
-    <div class="token-config">
-      <div class="input-wrapper">
-        <label class="input-label">Render API Token</label>
-        <input
-          type="text"
-          v-model="renderToken"
-          placeholder="请输入 Render API Token（必填）"
-          class="token-input"
-        />
-      </div>
-      <button
-        @click="loadData"
-        class="load-btn"
-        :disabled="loading || !isUtoolsEnv"
-      >
-        {{ loading ? "加载中..." : "加载项目" }}
       </button>
     </div>
 
@@ -63,7 +42,7 @@
         <button
           class="empty-reload-btn"
           @click="loadData"
-          :disabled="!renderToken || !isUtoolsEnv"
+          :disabled="!isUtoolsEnv"
         >
           重新加载
         </button>
@@ -153,16 +132,17 @@
 <script setup>
 import { ref, onMounted, watch } from "vue";
 import { usePiniaHelper } from "@/utils/piniaHelper";
+import getLatestConfig from "@/utils/get-config";
 
 const projectsHelper = usePiniaHelper("projects");
 
-const renderToken = ref("");
 const loading = ref(false);
 const list = ref([]);
 const hasLoaded = ref(false);
 
 const isUtoolsEnv = ref(false);
 const utoolsApiReady = ref(false);
+let renderToken = ref("");
 
 // 格式化时间函数
 const formatTime = (timeStr) => {
@@ -210,11 +190,6 @@ watch(utoolsApiReady, (newVal) => {
 const loadData = async (force = false) => {
   if (!isUtoolsEnv.value) {
     alert("请在 Utools 中加载插件后使用此功能！");
-    return;
-  }
-
-  if (!renderToken.value) {
-    alert("请输入 Render API Token！");
     return;
   }
 
@@ -266,14 +241,13 @@ const syncData = async () => {
   await loadData(true);
 };
 
-const windowReload = () => {
-  window.location.reload();
-};
-
 onMounted(async () => {
+  const config = await getLatestConfig();
+  renderToken.value = config.renderApiToken;
   // 延迟 100ms 再检测，给 preload 足够的挂载时间
   await new Promise((resolve) => setTimeout(resolve, 100));
   await checkUtoolsEnv();
+  await loadData();
 });
 </script>
 
@@ -332,62 +306,6 @@ onMounted(async () => {
   border-top: 2px solid white;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-}
-
-.token-config {
-  margin-bottom: 20px;
-  display: flex;
-  gap: 12px;
-  align-items: flex-end;
-}
-
-.input-wrapper {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.input-label {
-  font-size: 13px;
-  color: #666;
-  font-weight: 500;
-}
-
-.token-input {
-  flex: 1;
-  padding: 10px 12px;
-  border: 1px solid #e4e7ed;
-  border-radius: 6px;
-  font-size: 14px;
-  transition: border-color 0.2s ease;
-}
-
-.token-input:focus {
-  outline: none;
-  border-color: #4361ee;
-  box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.1);
-}
-
-.load-btn {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 6px;
-  background: #4361ee;
-  color: white;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-}
-
-.load-btn:disabled {
-  background-color: #a0a8d0;
-  cursor: not-allowed;
-}
-
-.load-btn:not(:disabled):hover {
-  background-color: #3a56d4;
 }
 
 .env-tip {
@@ -598,12 +516,6 @@ onMounted(async () => {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
-  }
-
-  .token-config {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
   }
 
   .list-item {
