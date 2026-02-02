@@ -1,0 +1,20 @@
+{
+  "pluginName": "多平台项目查看器",
+  "description": "查看 GitHub/Render/NPM/本地项目",
+  "author": "Grande",
+  "version": "1.0.0",
+  "logo": "logo.png",
+  "main": "dist/index.html",
+  "preload": "preload.js",
+  "development": {
+    "main": "http://localhost:5173/"
+  },
+  "features": [
+    {
+      "code": "project-viewer",
+      "explain": "查看多平台项目及本地文件",
+      "cmds": ["项目查看器", "project viewer"]
+    }
+  ],
+  "permissions": ["fs", "path", "os", "network", "nodejs"]
+}
