@@ -189,7 +189,6 @@ watch(utoolsApiReady, (newVal) => {
 // 加载数据逻辑
 const loadData = async (force = false) => {
   if (!isUtoolsEnv.value) {
-    alert("请在 Utools 中加载插件后使用此功能！");
     return;
   }
 
@@ -252,57 +251,76 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* 原有样式保留，新增适配新字段的样式 */
+/* 优化后的样式 */
 .render-view {
-  max-width: 1000px;
-  margin: 20px auto;
-  padding: 0 20px;
+  min-height: 100%;
+  margin: 0 auto;
+  padding: 20px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
 }
 
 .render-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 0;
-  margin-bottom: 16px;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 20px;
+  margin-bottom: 24px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.render-header:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
 }
 
 .header-title {
   margin: 0;
-  font-size: 18px;
+  font-size: 24px;
   color: #2c3e50;
-  font-weight: 600;
+  font-weight: 700;
+  background: linear-gradient(135deg, #4361ee 0%, #7209b7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .sync-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  background-color: #4361ee; /* Render 主题蓝紫 */
+  gap: 10px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #4361ee 0%, #7209b7 100%);
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 10px;
   cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s ease;
+  font-size: 15px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
 }
 
 .sync-btn:disabled {
-  background-color: #a0a8d0;
+  background: linear-gradient(135deg, #a0a8d0 0%, #c7b8e0 100%);
   cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
 }
 
 .sync-btn:not(:disabled):hover {
-  background-color: #3a56d4;
+  background: linear-gradient(135deg, #3a56d4 0%, #5a0887 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(67, 97, 238, 0.4);
 }
 
 .loading-icon {
-  width: 14px;
-  height: 14px;
-  border: 2px solid transparent;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
   border-top: 2px solid white;
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -311,53 +329,64 @@ onMounted(async () => {
 .env-tip {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  background: #fff7e6;
+  gap: 12px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #fff7e6 0%, #ffedd5 100%);
   border: 1px solid #ffd591;
-  border-radius: 6px;
+  border-radius: 10px;
   color: #fa8c16;
-  font-size: 13px;
-  margin-bottom: 20px;
+  font-size: 14px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 12px rgba(250, 140, 22, 0.1);
 }
 
 .tip-icon {
-  font-size: 16px;
+  font-size: 20px;
   line-height: 1;
 }
 
 .tip-text {
   flex: 1;
-  line-height: 1.4;
+  line-height: 1.5;
+  font-weight: 500;
 }
 
 .render-content {
-  border-radius: 8px;
+  border-radius: 16px;
   background-color: #ffffff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
   overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.render-content:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
 }
 
 .loading {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  padding: 80px 0;
+  gap: 16px;
+  padding: 100px 0;
   color: #666;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
 }
 
 .loading-spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid #e0e0e0;
-  border-top: 2px solid #4361ee;
+  width: 28px;
+  height: 28px;
+  border: 3px solid #e0e0e0;
+  border-top: 3px solid #4361ee;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
 
 .loading-text {
-  font-size: 14px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #495057;
 }
 
 .empty {
@@ -365,41 +394,55 @@ onMounted(async () => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 80px 20px;
+  padding: 100px 20px;
   text-align: center;
   color: #999;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
 }
 
 .empty-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
-  opacity: 0.6;
+  font-size: 64px;
+  margin-bottom: 24px;
+  opacity: 0.8;
+  transition: all 0.3s ease;
+}
+
+.empty:hover .empty-icon {
+  transform: scale(1.1) rotate(10deg);
 }
 
 .empty p {
-  margin: 0 0 20px 0;
-  font-size: 14px;
+  margin: 0 0 24px 0;
+  font-size: 16px;
+  color: #6c757d;
+  max-width: 400px;
+  line-height: 1.6;
 }
 
 .empty-reload-btn {
-  padding: 8px 16px;
-  background-color: #f5f7fa;
+  padding: 10px 24px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e7ed 100%);
   color: #4361ee;
-  border: 1px solid #e4e7ed;
-  border-radius: 6px;
+  border: 1px solid #d9e0ff;
+  border-radius: 10px;
   cursor: pointer;
-  font-size: 13px;
-  transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .empty-reload-btn:disabled {
   color: #999;
   cursor: not-allowed;
-  background-color: #f9f9f9;
+  background: linear-gradient(135deg, #f9f9f9 0%, #e9ecef 100%);
+  box-shadow: none;
 }
 
 .empty-reload-btn:not(:disabled):hover {
-  background-color: #eef0ff;
+  background: linear-gradient(135deg, #eef0ff 0%, #d9e0ff 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(67, 97, 238, 0.2);
 }
 
 .data-list {
@@ -409,9 +452,11 @@ onMounted(async () => {
 }
 
 .list-item {
-  padding: 20px;
+  padding: 24px;
   border-bottom: 1px solid #f5f5f5;
-  transition: background-color 0.2s ease;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
 }
 
 .list-item:last-child {
@@ -420,46 +465,78 @@ onMounted(async () => {
 
 .list-item:hover {
   background-color: #f8f9fa;
+  transform: translateX(8px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.list-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 4px;
+  background: linear-gradient(135deg, #4361ee 0%, #7209b7 100%);
+  transform: scaleY(0);
+  transition: transform 0.3s ease;
+}
+
+.list-item:hover::before {
+  transform: scaleY(1);
 }
 
 .item-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .item-name {
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 600;
   color: #2c3e50;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.item-name::before {
+  content: '🌐';
+  font-size: 16px;
 }
 
 .item-type-tag {
-  padding: 2px 8px;
-  background-color: #e8f4ff;
+  padding: 4px 12px;
+  background: linear-gradient(135deg, #e8f4ff 0%, #d9e0ff 100%);
   color: #4361ee;
-  font-size: 11px;
-  border-radius: 4px;
-  font-weight: 500;
+  font-size: 12px;
+  border-radius: 20px;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(67, 97, 238, 0.15);
 }
 
-/* 新增样式：适配新的字段展示 */
+/* 优化字段展示样式 */
 .item-branch,
 .item-repo,
 .item-url,
 .item-dashboard,
 .item-details,
 .item-time {
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.6;
-  margin-bottom: 6px;
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background-color: #f8f9fa;
+  border-left: 3px solid #d9e0ff;
 }
 
 .desc-label,
 .url-label {
   color: #999;
-  margin-right: 4px;
+  margin-right: 6px;
+  font-weight: 500;
 }
 
 .item-branch,
@@ -475,31 +552,45 @@ onMounted(async () => {
 }
 
 .item-repo a,
-.item-dashboard a {
+.item-dashboard a,
+.item-url a {
   color: #4361ee;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  transition: all 0.2s ease;
 }
 
 .item-repo a:hover,
-.item-dashboard a:hover {
+.item-dashboard a:hover,
+.item-url a:hover {
   text-decoration: underline;
+  transform: translateX(2px);
 }
 
 .update-time {
   color: #888;
-  font-size: 12px;
+  font-size: 13px;
+  margin-left: 12px;
+  padding-left: 12px;
+  border-left: 1px solid #e9ecef;
 }
 
 .link-icon {
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.item-repo a:hover .link-icon,
+.item-dashboard a:hover .link-icon,
+.item-url a:hover .link-icon {
+  transform: rotate(45deg);
 }
 
 @keyframes spin {
@@ -512,20 +603,76 @@ onMounted(async () => {
 }
 
 @media (max-width: 768px) {
+  .render-view {
+    padding: 16px;
+  }
+  
   .render-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 12px;
-  }
-
-  .list-item {
+    gap: 16px;
     padding: 16px;
   }
-
+  
+  .header-title {
+    font-size: 20px;
+  }
+  
+  .sync-btn {
+    padding: 10px 20px;
+    font-size: 14px;
+  }
+  
+  .list-item {
+    padding: 20px;
+  }
+  
+  .list-item:hover {
+    transform: translateX(4px);
+  }
+  
   .item-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 6px;
+    gap: 10px;
+  }
+  
+  .item-name {
+    font-size: 16px;
+  }
+  
+  .item-branch,
+  .item-repo,
+  .item-url,
+  .item-dashboard,
+  .item-details,
+  .item-time {
+    font-size: 13px;
+    padding: 6px 10px;
+  }
+  
+  .update-time {
+    margin-left: 8px;
+    padding-left: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .render-header {
+    padding: 12px;
+  }
+  
+  .header-title {
+    font-size: 18px;
+  }
+  
+  .sync-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+  
+  .list-item {
+    padding: 16px;
   }
 }
 </style>

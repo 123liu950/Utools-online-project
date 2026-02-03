@@ -26,21 +26,29 @@
           <div class="item-header">
             <div class="item-name">
               <span class="npm-tag">npm</span>
-              <a :href="item.package.links?.npm" target="_blank" rel="noopener noreferrer" class="package-link">{{ item.package.name }}</a>
+              <a
+                :href="item.package.links?.npm"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="package-link"
+                >{{ item.package.name }}</a
+              >
               <span class="version-tag">{{ item.package.version }}</span>
             </div>
           </div>
-          
+
           <!-- 包描述 -->
           <div v-if="item.package.description" class="item-desc">
             {{ item.package.description }}
           </div>
-          
+
           <!-- 包统计信息 -->
           <div class="item-stats">
             <div class="stat-item">
               <span class="stat-icon">📥</span>
-              <span class="stat-text">{{ item.downloads?.monthly || 0 }} 月下载</span>
+              <span class="stat-text"
+                >{{ item.downloads?.monthly || 0 }} 月下载</span
+              >
             </div>
             <div class="stat-item">
               <span class="stat-icon">📦</span>
@@ -48,15 +56,19 @@
             </div>
             <div class="stat-item">
               <span class="stat-icon">⭐</span>
-              <span class="stat-text">{{ (item.score?.final * 100).toFixed(0) }} 分</span>
+              <span class="stat-text"
+                >{{ (item.score?.final * 100).toFixed(0) }} 分</span
+              >
             </div>
           </div>
-          
+
           <!-- 包详情信息 -->
           <div class="item-details">
             <div class="detail-item">
               <span class="detail-label">发布者：</span>
-              <span class="detail-value">{{ item.package.publisher?.username }}</span>
+              <span class="detail-value">{{
+                item.package.publisher?.username
+              }}</span>
             </div>
             <div class="detail-item">
               <span class="detail-label">许可证：</span>
@@ -64,38 +76,72 @@
             </div>
             <div class="detail-item">
               <span class="detail-label">发布时间：</span>
-              <span class="detail-value">{{ formatDate(item.package.date) }}</span>
+              <span class="detail-value">{{
+                formatDate(item.package.date)
+              }}</span>
             </div>
             <div class="detail-item">
               <span class="detail-label">更新时间：</span>
               <span class="detail-value">{{ formatDate(item.updated) }}</span>
             </div>
           </div>
-          
+
           <!-- 包链接 -->
           <div v-if="item.package.links" class="item-links">
-            <a v-if="item.package.links.homepage" :href="item.package.links.homepage" target="_blank" rel="noopener noreferrer" class="link-item">
+            <a
+              v-if="item.package.links.homepage"
+              :href="item.package.links.homepage"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="link-item"
+            >
               <span class="link-icon">🏠</span>
               <span class="link-text">主页</span>
             </a>
-            <a v-if="item.package.links.repository" :href="item.package.links.repository" target="_blank" rel="noopener noreferrer" class="link-item">
+            <a
+              v-if="item.package.links.repository"
+              :href="handleRepository(item.package.links.repository)"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="link-item"
+            >
               <span class="link-icon">📁</span>
               <span class="link-text">仓库</span>
             </a>
-            <a v-if="item.package.links.bugs" :href="item.package.links.bugs" target="_blank" rel="noopener noreferrer" class="link-item">
+            <a
+              v-if="item.package.links.bugs"
+              :href="item.package.links.bugs"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="link-item"
+            >
               <span class="link-icon">🐛</span>
               <span class="link-text">问题</span>
             </a>
-            <a v-if="item.package.links.npm" :href="item.package.links.npm" target="_blank" rel="noopener noreferrer" class="link-item">
+            <a
+              v-if="item.package.links.npm"
+              :href="item.package.links.npm"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="link-item"
+            >
               <span class="link-icon">📦</span>
               <span class="link-text">NPM</span>
             </a>
           </div>
-          
+
           <!-- 包关键词 -->
-          <div v-if="item.package.keywords && item.package.keywords.length" class="item-keywords">
+          <div
+            v-if="item.package.keywords && item.package.keywords.length"
+            class="item-keywords"
+          >
             <span class="keywords-label">关键词：</span>
-            <span v-for="(keyword, idx) in item.package.keywords" :key="idx" class="keyword-tag">{{ keyword }}</span>
+            <span
+              v-for="(keyword, idx) in item.package.keywords"
+              :key="idx"
+              class="keyword-tag"
+              >{{ keyword }}</span
+            >
           </div>
         </li>
       </ul>
@@ -135,16 +181,21 @@ const syncData = async () => {
   await loadData(true);
 };
 
+const handleRepository = (url) => {
+  if (!url) return "";
+  return url.replace(/^git\+/, "");
+};
+
 // 格式化日期函数
 const formatDate = (dateString) => {
-  if (!dateString) return '';
+  if (!dateString) return "";
   const date = new Date(dateString);
-  return date.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
+  return date.toLocaleString("zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 };
 
@@ -347,7 +398,7 @@ onMounted(() => {
 }
 
 .list-item::before {
-  content: '';
+  content: "";
   position: absolute;
   left: 0;
   top: 0;
@@ -577,78 +628,78 @@ onMounted(() => {
   .npm-view {
     padding: 16px;
   }
-  
+
   .npm-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
     padding: 16px;
   }
-  
+
   .header-title {
     font-size: 20px;
   }
-  
+
   .sync-btn {
     padding: 10px 20px;
     font-size: 14px;
   }
-  
+
   .list-item {
     padding: 16px 20px;
   }
-  
+
   .list-item:hover {
     transform: translateX(4px);
   }
-  
+
   .item-name {
     font-size: 16px;
   }
-  
+
   .version-tag {
     font-size: 11px;
     padding: 2px 6px;
   }
-  
+
   .item-desc {
     font-size: 13px;
     padding: 10px 14px;
     margin-bottom: 12px;
   }
-  
+
   .item-stats {
     gap: 10px;
   }
-  
+
   .stat-item {
     font-size: 12px;
     padding: 4px 8px;
   }
-  
+
   .item-details {
     grid-template-columns: 1fr;
     gap: 8px;
     padding: 10px 14px;
   }
-  
+
   .detail-item {
     font-size: 12px;
   }
-  
+
   .item-links {
     gap: 8px;
   }
-  
+
   .link-item {
     font-size: 12px;
     padding: 6px 12px;
   }
-  
+
   .item-keywords {
     gap: 6px;
   }
-  
+
   .keyword-tag {
     font-size: 11px;
     padding: 3px 8px;
@@ -659,65 +710,65 @@ onMounted(() => {
   .npm-header {
     padding: 12px;
   }
-  
+
   .header-title {
     font-size: 18px;
   }
-  
+
   .sync-btn {
     padding: 8px 16px;
     font-size: 13px;
   }
-  
+
   .list-item {
     padding: 12px 16px;
   }
-  
+
   .item-name {
     font-size: 14px;
     gap: 8px;
   }
-  
+
   .version-tag {
     font-size: 10px;
     padding: 2px 4px;
   }
-  
+
   .item-desc {
     font-size: 12px;
     padding: 8px 12px;
   }
-  
+
   .item-stats {
     gap: 8px;
   }
-  
+
   .stat-item {
     font-size: 11px;
     padding: 3px 6px;
   }
-  
+
   .stat-icon {
     font-size: 12px;
   }
-  
+
   .item-details {
     padding: 8px 12px;
   }
-  
+
   .detail-item {
     font-size: 11px;
   }
-  
+
   .link-item {
     font-size: 11px;
     padding: 4px 10px;
   }
-  
+
   .link-icon {
     font-size: 12px;
   }
-  
+
   .keyword-tag {
     font-size: 10px;
     padding: 2px 6px;
