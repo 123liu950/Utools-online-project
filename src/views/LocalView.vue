@@ -446,7 +446,7 @@ const closePreview = () => {
 }
 
 .local-header::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -475,7 +475,7 @@ const closePreview = () => {
 }
 
 .header-title::before {
-  content: '📁';
+  content: "📁";
   font-size: 20px;
   background: none;
   -webkit-background-clip: unset;
@@ -502,13 +502,18 @@ const closePreview = () => {
 }
 
 .select-dir-btn::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
   transition: left 0.6s ease;
 }
 
@@ -564,13 +569,17 @@ const closePreview = () => {
 }
 
 .loading::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(59, 130, 246, 0.1) 0%,
+    transparent 70%
+  );
 }
 
 .loading-spinner {
@@ -607,13 +616,17 @@ const closePreview = () => {
 }
 
 .empty::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.08) 0%, transparent 70%);
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(59, 130, 246, 0.08) 0%,
+    transparent 70%
+  );
 }
 
 .empty-icon {
@@ -662,13 +675,18 @@ const closePreview = () => {
 }
 
 .empty-reload-btn::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.2), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(59, 130, 246, 0.2),
+    transparent
+  );
   transition: left 0.6s ease;
 }
 
@@ -749,7 +767,7 @@ const closePreview = () => {
 }
 
 .preview-modal::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -782,7 +800,7 @@ const closePreview = () => {
 }
 
 .preview-title::before {
-  content: '📄';
+  content: "📄";
   font-size: 14px;
 }
 
@@ -807,13 +825,18 @@ const closePreview = () => {
 }
 
 .download-btn::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
   transition: left 0.6s ease;
 }
 
@@ -852,7 +875,7 @@ const closePreview = () => {
 
 .preview-content {
   flex: 1;
-  overflow: hidden;
+  overflow: auto;
   position: relative;
 }
 
@@ -872,7 +895,7 @@ const closePreview = () => {
 }
 
 .preview-loading::before {
-  content: '';
+  content: "";
   width: 24px;
   height: 24px;
   border: 3px solid #e0e0e0;
@@ -887,6 +910,7 @@ const closePreview = () => {
   overflow: auto;
   padding: 24px;
   box-sizing: border-box;
+  min-height: 50vh;
 }
 
 /* 文本/代码 */
@@ -898,7 +922,7 @@ const closePreview = () => {
   border-radius: 12px;
   overflow: auto;
   max-height: 70vh;
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
   font-size: 14px;
   line-height: 1.5;
   box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -922,13 +946,17 @@ const closePreview = () => {
 }
 
 .media-container::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.05) 0%, transparent 70%);
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(255, 255, 255, 0.05) 0%,
+    transparent 70%
+  );
   pointer-events: none;
 }
 
@@ -952,6 +980,7 @@ const closePreview = () => {
   height: 100%;
   border: none;
   border-radius: 8px;
+  min-height: 80vh;
 }
 
 /* Office 预览样式 */
@@ -1006,13 +1035,17 @@ const closePreview = () => {
 }
 
 .unsupported::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.08) 0%, transparent 70%);
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(59, 130, 246, 0.08) 0%,
+    transparent 70%
+  );
 }
 
 .unsupported p {
@@ -1022,7 +1055,7 @@ const closePreview = () => {
 }
 
 .unsupported::after {
-  content: '⚠️';
+  content: "⚠️";
   font-size: 48px;
   position: absolute;
   top: 20px;
@@ -1037,62 +1070,62 @@ const closePreview = () => {
   .local-view {
     padding: 16px;
   }
-  
+
   .local-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
     padding: 20px;
   }
-  
+
   .header-title {
     font-size: 20px;
   }
-  
+
   .btn-group {
     width: 100%;
     flex-direction: column;
   }
-  
+
   .select-dir-btn {
     width: 100%;
     padding: 14px;
     text-align: center;
   }
-  
+
   .file-tree-container {
     padding: 20px;
     max-height: 60vh;
   }
-  
+
   .preview-modal {
     width: 95%;
     max-height: 95vh;
   }
-  
+
   .preview-header {
     padding: 16px 20px;
   }
-  
+
   .preview-body {
     padding: 20px;
   }
-  
+
   .code-pre {
     padding: 20px;
     font-size: 13px;
   }
-  
+
   .media-container img,
   .media-container video {
     max-height: 70vh;
   }
-  
+
   .empty-btn-group {
     flex-direction: column;
     width: 100%;
   }
-  
+
   .empty-reload-btn {
     width: 100%;
     padding: 12px;
@@ -1104,42 +1137,42 @@ const closePreview = () => {
   .local-header {
     padding: 16px;
   }
-  
+
   .header-title {
     font-size: 18px;
   }
-  
+
   .select-dir-btn {
     padding: 12px;
     font-size: 14px;
   }
-  
+
   .file-tree-container {
     padding: 16px;
     max-height: 50vh;
   }
-  
+
   .preview-modal {
     width: 98%;
   }
-  
+
   .preview-header {
     padding: 12px 16px;
   }
-  
+
   .preview-title {
     font-size: 14px;
   }
-  
+
   .preview-body {
     padding: 16px;
   }
-  
+
   .code-pre {
     padding: 16px;
     font-size: 12px;
   }
-  
+
   .unsupported {
     padding: 40px 16px;
   }
@@ -1176,7 +1209,8 @@ const closePreview = () => {
 }
 
 @keyframes float {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0);
   }
   50% {
