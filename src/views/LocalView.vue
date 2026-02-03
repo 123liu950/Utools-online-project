@@ -78,13 +78,68 @@
         <div class="preview-modal" @click.stop>
           <div class="preview-header">
             <span class="preview-title">{{ previewFile?.name }}</span>
-            <button class="close-btn" @click="closePreview">×</button>
+            <div class="preview-header-actions">
+              <a
+                v-if="previewUrl"
+                :href="previewUrl"
+                :download="previewFile?.name"
+                class="download-btn"
+              >
+                下载
+              </a>
+              <button class="close-btn" @click="closePreview">×</button>
+            </div>
           </div>
           <div class="preview-content">
             <div v-if="previewLoading" class="preview-loading">加载中...</div>
-            <pre v-else class="code-pre" ref="codePreview">
-              <code :class="`language-${getFileExtension(previewFile?.name)}`" v-html="previewContent"></code>
-            </pre>
+            <div v-else class="preview-body">
+              <!-- 文本/代码 -->
+              <pre v-if="previewType === 'text'" class="code-pre">
+                <code v-html="previewContent"></code>
+              </pre>
+
+              <!-- 图片 -->
+              <div v-else-if="previewType === 'image'" class="media-container">
+                <img :src="previewUrl" alt="预览图片" />
+              </div>
+
+              <!-- PDF -->
+              <iframe
+                v-else-if="previewType === 'pdf'"
+                :src="previewUrl"
+                class="pdf-viewer"
+              ></iframe>
+
+              <!-- 视频 -->
+              <div v-else-if="previewType === 'video'" class="media-container">
+                <video :src="previewUrl" controls autoplay></video>
+              </div>
+
+              <!-- 音频 -->
+              <div v-else-if="previewType === 'audio'" class="media-container">
+                <audio :src="previewUrl" controls></audio>
+              </div>
+
+              <!-- Word (使用 mammoth 转 HTML) -->
+              <div
+                v-else-if="previewType === 'word'"
+                class="office-preview"
+                v-html="previewContent"
+              ></div>
+
+              <!-- Excel (使用 xlsx 转 HTML 表格) -->
+              <div
+                v-else-if="previewType === 'excel'"
+                class="office-preview"
+                v-html="previewContent"
+              ></div>
+
+              <!-- 不支持 -->
+              <div v-else class="unsupported">
+                <p>浏览器无法直接预览此文件类型</p>
+                <p>已为您生成下载链接，可下载后用相应软件打开</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -93,10 +148,15 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, computed } from "vue";
+import { ref, computed } from "vue";
 import hljs from "highlight.js";
-import "highlight.js/styles/github-dark.css"; // 引入高亮样式
-// 导入独立的树形节点组件
+import "highlight.js/styles/github-dark.css";
+
+// 新增：Word 和 Excel 预览所需库（请提前 npm install mammoth xlsx）
+import mammoth from "mammoth";
+import * as XLSX from "xlsx";
+
+// 导入树形节点组件
 import TreeNode from "@/components/TreeNode.vue";
 
 // 检测浏览器是否支持 File System Access API
@@ -110,28 +170,25 @@ const fileTree = ref([]);
 const previewVisible = ref(false);
 const previewLoading = ref(false);
 const previewFile = ref(null);
-const previewContent = ref("");
-const codePreview = ref(null);
+const previewContent = ref(""); // 用于文本、Word、Excel 的 HTML 内容
+const previewUrl = ref(""); // 用于图片、PDF、音视频、不支持类型的 object URL
+const previewType = ref(""); // text | image | pdf | video | audio | word | excel | unsupported
 const fileInput = ref(null);
-// 存储兼容模式下的文件数据
 const fallbackFileData = ref({});
 
-// ========== 现代浏览器方案 (File System Access API) ==========
+// ========== 现代浏览器方案 ==========
 const selectDirectoryModern = async () => {
   try {
     loading.value = true;
     fileTree.value = [];
 
-    // 修复：正确处理 showDirectoryPicker 返回值（不使用解构赋值）
     const dirHandle = await window.showDirectoryPicker();
     if (!dirHandle) return;
 
-    // 递归读取文件夹内容
     const fileTreeData = await readDirectoryModern(dirHandle, dirHandle.name);
     fileTree.value = [fileTreeData];
   } catch (error) {
     if (error.name !== "AbortError") {
-      // 忽略用户取消选择的情况
       console.error("选择文件夹失败 (现代模式):", error);
       alert(`选择文件夹失败：${error.message}\n建议尝试兼容模式`);
     }
@@ -140,7 +197,6 @@ const selectDirectoryModern = async () => {
   }
 };
 
-// 递归读取文件夹内容（现代模式）
 const readDirectoryModern = async (dirHandle, name, path = "") => {
   const currentPath = path ? `${path}/${name}` : name;
   const node = {
@@ -151,14 +207,11 @@ const readDirectoryModern = async (dirHandle, name, path = "") => {
     children: [],
   };
 
-  // 遍历文件夹中的所有条目
   for await (const [key, handle] of dirHandle.entries()) {
     if (handle.kind === "directory") {
-      // 递归读取子文件夹
       const childNode = await readDirectoryModern(handle, key, currentPath);
       node.children.push(childNode);
     } else if (handle.kind === "file") {
-      // 添加文件节点
       node.children.push({
         name: key,
         path: `${currentPath}/${key}`,
@@ -171,17 +224,14 @@ const readDirectoryModern = async (dirHandle, name, path = "") => {
   return node;
 };
 
-// ========== 兼容方案 (传统文件输入框) ==========
+// ========== 兼容方案 ==========
 const selectDirectoryFallback = () => {
   if (fileInput.value) {
-    // 清空之前的选择
     fileInput.value.value = "";
-    // 触发文件选择对话框
     fileInput.value.click();
   }
 };
 
-// 处理兼容模式下的文件选择
 const handleFileInputChange = (e) => {
   const files = e.target.files;
   if (!files || files.length === 0) return;
@@ -189,19 +239,15 @@ const handleFileInputChange = (e) => {
   loading.value = true;
 
   try {
-    // 清空之前的数据
     fallbackFileData.value = {};
     fileTree.value = [];
 
-    // 处理选中的文件，构建文件树
     const fileList = Array.from(files);
 
-    // 存储所有文件路径，用于构建目录结构
     fileList.forEach((file) => {
       fallbackFileData.value[file.webkitRelativePath] = file;
     });
 
-    // 构建文件树
     const root = {
       name: "选中的文件夹",
       type: "dir",
@@ -222,122 +268,160 @@ const handleFileInputChange = (e) => {
   }
 };
 
-// 构建文件树结构（兼容模式）
 const buildTree = (node, pathParts, file) => {
   if (pathParts.length === 0) return;
 
   const currentPart = pathParts.shift();
-
-  // 检查当前节点是否已存在
   let childNode = node.children.find((child) => child.name === currentPart);
 
   if (!childNode) {
-    // 判断是文件还是文件夹
     const isFile = pathParts.length === 0;
-
     childNode = {
       name: currentPart,
       type: isFile ? "file" : "dir",
       children: [],
-      // 存储文件对象（仅文件节点）
       ...(isFile ? { file, webkitRelativePath: file.webkitRelativePath } : {}),
     };
-
     node.children.push(childNode);
   }
 
-  // 递归构建子节点
   buildTree(childNode, pathParts, file);
 };
 
 // ========== 文件预览功能 ==========
-// 打开文件预览
 const openFilePreview = async (fileNode) => {
   if (fileNode.type !== "file") return;
+
+  // 清理上一次的 object URL
+  if (previewUrl.value) {
+    URL.revokeObjectURL(previewUrl.value);
+    previewUrl.value = "";
+  }
 
   previewFile.value = fileNode;
   previewVisible.value = true;
   previewLoading.value = true;
+  previewContent.value = "";
+  previewType.value = "";
 
   try {
-    let content = "";
-
-    // 区分现代模式和兼容模式
+    // 获取 File 对象（现代/兼容模式统一）
+    let fileObj;
     if (fileNode.handle) {
-      // 现代模式：使用 File System Access API
-      const file = await fileNode.handle.getFile();
-      content = await file.text();
+      // 现代模式
+      fileObj = await fileNode.handle.getFile();
     } else if (fileNode.file) {
-      // 兼容模式：使用 FileReader
-      content = await readFileContent(fileNode.file);
+      // 兼容模式
+      fileObj = fileNode.file;
     }
 
-    // 使用 highlight.js 高亮代码
-    previewContent.value = hljs.highlightAuto(content).value;
+    if (!fileObj) return;
+
+    // 始终创建 object URL（用于下载、图片、PDF、音视频、不支持类型）
+    previewUrl.value = URL.createObjectURL(fileObj);
+
+    // 判断预览类型
+    previewType.value = getPreviewType(fileObj);
+
+    // 需要读取内容的类型
+    if (["text", "word", "excel"].includes(previewType.value)) {
+      if (previewType.value === "text") {
+        const content = await fileObj.text();
+        previewContent.value = hljs.highlightAuto(content).value;
+      } else if (previewType.value === "word") {
+        const arrayBuffer = await fileObj.arrayBuffer();
+        const result = await mammoth.convertToHtml({ arrayBuffer });
+        previewContent.value = result.value;
+      } else if (previewType.value === "excel") {
+        const arrayBuffer = await fileObj.arrayBuffer();
+        const wb = XLSX.read(arrayBuffer, { type: "array" });
+        let html = "";
+        wb.SheetNames.forEach((sheetName) => {
+          const sheet = wb.Sheets[sheetName];
+          html += `<h3 style="margin-top:24px;color:#3b82f6;">${sheetName}</h3>`;
+          html += XLSX.utils.sheet_to_html(sheet);
+        });
+        previewContent.value = html;
+      }
+    }
+    // 其他类型（image/pdf/video/audio/unsupported）直接使用 previewUrl
   } catch (error) {
     console.error("读取文件失败:", error);
     previewContent.value = `<div class="error-msg">读取文件失败：${error.message}</div>`;
+    previewType.value = "unsupported";
   } finally {
     previewLoading.value = false;
   }
 };
 
-// 读取文件内容（兼容模式）
-const readFileContent = (file) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => resolve(e.target.result);
-    reader.onerror = (e) => reject(e);
-    reader.readAsText(file);
-  });
+// 判断文件预览类型
+const getPreviewType = (fileObj) => {
+  const mime = fileObj.type || "";
+  const ext = fileObj.name.split(".").pop()?.toLowerCase() || "";
+
+  // MIME 优先
+  if (mime.startsWith("image/")) return "image";
+  if (mime === "application/pdf") return "pdf";
+  if (mime.startsWith("video/")) return "video";
+  if (mime.startsWith("audio/")) return "audio";
+  if (mime.startsWith("text/")) return "text";
+
+  // 扩展名兜底
+  const imageExts = [
+    "jpg",
+    "jpeg",
+    "png",
+    "gif",
+    "bmp",
+    "webp",
+    "svg",
+    "ico",
+    "tiff",
+  ];
+  const videoExts = ["mp4", "webm", "ogg", "avi", "mov", "mkv"];
+  const audioExts = ["mp3", "wav", "ogg", "m4a", "flac"];
+  const textExts = [
+    "js",
+    "ts",
+    "vue",
+    "html",
+    "css",
+    "scss",
+    "json",
+    "md",
+    "txt",
+    "log",
+    "xml",
+    "yaml",
+    "yml",
+    "csv",
+  ];
+
+  if (imageExts.includes(ext)) return "image";
+  if (ext === "pdf") return "pdf";
+  if (videoExts.includes(ext)) return "video";
+  if (audioExts.includes(ext)) return "audio";
+  if (textExts.includes(ext)) return "text";
+  if (["doc", "docx"].includes(ext)) return "word";
+  if (["xls", "xlsx", "csv"].includes(ext))
+    return ext === "csv" ? "text" : "excel";
+
+  return "unsupported";
 };
 
-// 关闭预览弹窗
 const closePreview = () => {
   previewVisible.value = false;
   previewFile.value = null;
   previewContent.value = "";
-};
-
-// 获取文件扩展名
-const getFileExtension = (fileName) => {
-  if (!fileName) return "";
-  const ext = fileName.split(".").pop().toLowerCase();
-  // 映射常见扩展名到highlight.js支持的语言
-  const extMap = {
-    js: "javascript",
-    vue: "html",
-    ts: "typescript",
-    json: "json",
-    md: "markdown",
-    html: "html",
-    css: "css",
-    scss: "scss",
-    java: "java",
-    py: "python",
-    php: "php",
-  };
-  return extMap[ext] || ext || "plaintext";
-};
-
-// ========== 初始化 ==========
-// 初始化highlight.js
-onMounted(() => {
-  if (codePreview.value) {
-    hljs.highlightElement(codePreview.value);
+  if (previewUrl.value) {
+    URL.revokeObjectURL(previewUrl.value);
+    previewUrl.value = "";
   }
-});
-
-// 监听预览内容变化，重新高亮
-watch(previewContent, () => {
-  if (codePreview.value) {
-    hljs.highlightElement(codePreview.value.querySelector("code"));
-  }
-});
+};
 </script>
 
 <style scoped>
-/* 优化后的样式 */
+/* 主容器样式 */
 .local-view {
   min-height: 100%;
   margin: 0 auto;
@@ -351,12 +435,24 @@ watch(previewContent, () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px;
+  padding: 24px;
   margin-bottom: 24px;
   background: white;
   border-radius: 16px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.local-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%);
 }
 
 .local-header:hover {
@@ -373,22 +469,51 @@ watch(previewContent, () => {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-title::before {
+  content: '📁';
+  font-size: 20px;
+  background: none;
+  -webkit-background-clip: unset;
+  -webkit-text-fill-color: unset;
 }
 
 .btn-group {
   display: flex;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .select-dir-btn {
-  padding: 10px 20px;
+  padding: 12px 24px;
   border: none;
   border-radius: 10px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   transition: all 0.3s ease;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.select-dir-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.6s ease;
+}
+
+.select-dir-btn:hover::before {
+  left: 100%;
 }
 
 .modern-btn {
@@ -396,21 +521,19 @@ watch(previewContent, () => {
   color: white;
 }
 
-.modern-btn:hover {
-  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
-}
-
 .fallback-btn {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  color: white;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e7ed 100%);
+  color: #3b82f6;
+  border: 1px solid #dbeafe;
 }
 
-.fallback-btn:hover {
-  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+.select-dir-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
+}
+
+.select-dir-btn:active {
+  transform: translateY(0);
 }
 
 /* 数据展示区域 */
@@ -418,7 +541,7 @@ watch(previewContent, () => {
   border-radius: 16px;
   background-color: #ffffff;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  min-height: 600px;
+  overflow: hidden;
   transition: all 0.3s ease;
 }
 
@@ -436,21 +559,37 @@ watch(previewContent, () => {
   padding: 100px 0;
   color: #666;
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.loading::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
 }
 
 .loading-spinner {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border: 3px solid #e0e0e0;
   border-top: 3px solid #3b82f6;
   border-radius: 50%;
   animation: spin 1s linear infinite;
+  position: relative;
+  z-index: 1;
 }
 
 .loading-text {
   font-size: 16px;
   font-weight: 500;
   color: #495057;
+  position: relative;
+  z-index: 1;
 }
 
 /* 空状态样式 */
@@ -459,18 +598,32 @@ watch(previewContent, () => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100%;
   padding: 100px 20px;
   text-align: center;
   color: #999;
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.empty::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.08) 0%, transparent 70%);
 }
 
 .empty-icon {
-  font-size: 64px;
+  font-size: 72px;
   margin-bottom: 24px;
   opacity: 0.8;
   transition: all 0.3s ease;
+  position: relative;
+  z-index: 1;
+  animation: float 3s ease-in-out infinite;
 }
 
 .empty:hover .empty-icon {
@@ -483,191 +636,403 @@ watch(previewContent, () => {
   color: #6c757d;
   max-width: 400px;
   line-height: 1.6;
+  position: relative;
+  z-index: 1;
 }
 
 .empty-btn-group {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
-  justify-content: center;
+  position: relative;
+  z-index: 1;
 }
 
 .empty-reload-btn {
-  padding: 10px 20px;
-  border: none;
+  padding: 10px 24px;
+  border: 1px solid #dbeafe;
   border-radius: 10px;
   cursor: pointer;
   font-size: 14px;
   font-weight: 600;
   transition: all 0.3s ease;
-  color: white;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.empty-reload-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.2), transparent);
+  transition: left 0.6s ease;
+}
+
+.empty-reload-btn:hover::before {
+  left: 100%;
 }
 
 .empty-reload-btn.modern-btn {
   background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-}
-
-.empty-reload-btn.modern-btn:hover {
-  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+  color: white;
+  border: none;
 }
 
 .empty-reload-btn.fallback-btn {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e7ed 100%);
+  color: #3b82f6;
 }
 
-.empty-reload-btn.fallback-btn:hover {
-  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+.empty-reload-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
 }
 
-/* 文件树容器样式 */
+/* 文件树容器 */
 .file-tree-container {
-  padding: 20px;
+  padding: 24px;
+  max-height: 70vh;
+  overflow-y: auto;
 }
 
-/* 预览弹窗样式 */
+.file-tree-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.file-tree-container::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.file-tree-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.file-tree-container::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+}
+
+/* 预览弹窗 */
 .preview-modal-mask {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  backdrop-filter: blur(6px);
   animation: fadeIn 0.3s ease;
 }
 
 .preview-modal {
-  width: 90%;
-  max-width: 1200px;
-  max-height: 90vh;
-  background-color: white;
+  background: white;
   border-radius: 16px;
-  overflow: hidden;
+  width: 90%;
+  max-width: 1000px;
+  max-height: 90vh;
   display: flex;
   flex-direction: column;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  animation: slideUp 0.4s ease;
+  animation: slideIn 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.preview-modal::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%);
 }
 
 .preview-header {
-  padding: 16px 24px;
-  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-  color: white;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #334155;
+  padding: 20px 24px;
+  border-bottom: 1px solid #f0f0f0;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 16px 16px 0 0;
 }
 
 .preview-title {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
-  white-space: nowrap;
+  color: #2c3e50;
+  flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 80%;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.preview-title::before {
+  content: '📄';
+  font-size: 14px;
+}
+
+.preview-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.download-btn {
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.download-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.6s ease;
+}
+
+.download-btn:hover::before {
+  left: 100%;
+}
+
+.download-btn:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .close-btn {
+  padding: 8px 12px;
   background: none;
   border: none;
-  color: white;
   font-size: 24px;
   cursor: pointer;
-  width: 36px;
-  height: 36px;
+  color: #666;
+  border-radius: 8px;
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  transition: all 0.3s ease;
+  width: 32px;
+  height: 32px;
 }
 
 .close-btn:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  transform: rotate(90deg);
+  background: #f1f5f9;
+  color: #333;
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .preview-content {
   flex: 1;
-  padding: 20px;
-  overflow: auto;
-  background-color: #f8fafc;
+  overflow: hidden;
+  position: relative;
 }
 
 .preview-loading {
-  text-align: center;
-  padding: 60px;
-  color: #666;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.9);
   font-size: 16px;
-  font-weight: 500;
+  color: #666;
+  z-index: 10;
 }
 
+.preview-loading::before {
+  content: '';
+  width: 24px;
+  height: 24px;
+  border: 3px solid #e0e0e0;
+  border-top: 3px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 12px;
+}
+
+.preview-body {
+  height: 100%;
+  overflow: auto;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+/* 文本/代码 */
 .code-pre {
   margin: 0;
   padding: 24px;
-  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-  border-radius: 10px;
-  overflow-x: auto;
-  color: #e2e8f0;
+  background: #1e293b;
+  color: #f8fafc;
+  border-radius: 12px;
+  overflow: auto;
+  max-height: 70vh;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: 14px;
+  line-height: 1.5;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
+  border: 1px solid #334155;
+}
+
+.code-pre code {
+  font-family: inherit;
+}
+
+/* 媒体容器（居中显示） */
+.media-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  background: #0f172a;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+}
+
+.media-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.05) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.media-container img,
+.media-container video {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.media-container img:hover,
+.media-container video:hover {
+  transform: scale(1.02);
+}
+
+/* PDF 查看器 */
+.pdf-viewer {
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: 8px;
+}
+
+/* Office 预览样式 */
+.office-preview {
+  padding: 24px;
+  background: white;
   line-height: 1.6;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
 }
 
-.error-msg {
-  color: #ef4444;
-  padding: 40px;
+.office-preview table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 16px 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.office-preview td,
+.office-preview th {
+  border: 1px solid #e2e8f0;
+  padding: 10px 16px;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+
+.office-preview th {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  font-weight: 600;
+  color: #334155;
+  border-bottom: 2px solid #cbd5e1;
+}
+
+.office-preview tr:hover td {
+  background: #f8fafc;
+}
+
+/* 不支持提示 */
+.unsupported {
   text-align: center;
+  padding: 60px 20px;
+  color: #666;
   font-size: 16px;
-  font-weight: 500;
-  background-color: #fef2f2;
-  border: 1px solid #fee2e2;
-  border-radius: 10px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 12px;
   margin: 20px;
+  position: relative;
+  overflow: hidden;
 }
 
-/* 旋转动画 */
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
+.unsupported::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.08) 0%, transparent 70%);
 }
 
-/* 淡入动画 */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+.unsupported p {
+  margin: 16px 0;
+  position: relative;
+  z-index: 1;
 }
 
-/* 上滑动画 */
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+.unsupported::after {
+  content: '⚠️';
+  font-size: 48px;
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0.1;
+  z-index: 0;
 }
 
-/* 响应式适配 */
+/* 响应式调整 */
 @media (max-width: 768px) {
   .local-view {
     padding: 16px;
@@ -677,7 +1042,7 @@ watch(previewContent, () => {
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
-    padding: 16px;
+    padding: 20px;
   }
   
   .header-title {
@@ -687,54 +1052,57 @@ watch(previewContent, () => {
   .btn-group {
     width: 100%;
     flex-direction: column;
-    gap: 10px;
   }
   
   .select-dir-btn {
     width: 100%;
-    padding: 12px 20px;
+    padding: 14px;
+    text-align: center;
+  }
+  
+  .file-tree-container {
+    padding: 20px;
+    max-height: 60vh;
+  }
+  
+  .preview-modal {
+    width: 95%;
+    max-height: 95vh;
+  }
+  
+  .preview-header {
+    padding: 16px 20px;
+  }
+  
+  .preview-body {
+    padding: 20px;
+  }
+  
+  .code-pre {
+    padding: 20px;
+    font-size: 13px;
+  }
+  
+  .media-container img,
+  .media-container video {
+    max-height: 70vh;
   }
   
   .empty-btn-group {
     flex-direction: column;
     width: 100%;
-    max-width: 300px;
   }
   
   .empty-reload-btn {
     width: 100%;
-  }
-  
-  .file-tree-container {
-    padding: 16px;
-  }
-  
-  .preview-modal {
-    width: 95%;
-    max-height: 85vh;
-  }
-  
-  .preview-header {
-    padding: 12px 20px;
-  }
-  
-  .preview-title {
-    font-size: 16px;
-  }
-  
-  .preview-content {
-    padding: 16px;
-  }
-  
-  .code-pre {
-    font-size: 13px;
-    padding: 16px;
+    padding: 12px;
+    text-align: center;
   }
 }
 
 @media (max-width: 480px) {
   .local-header {
-    padding: 12px;
+    padding: 16px;
   }
   
   .header-title {
@@ -742,25 +1110,77 @@ watch(previewContent, () => {
   }
   
   .select-dir-btn {
-    padding: 10px 16px;
-    font-size: 13px;
+    padding: 12px;
+    font-size: 14px;
   }
   
   .file-tree-container {
-    padding: 12px;
+    padding: 16px;
+    max-height: 50vh;
   }
   
   .preview-modal {
     width: 98%;
   }
   
-  .preview-content {
-    padding: 12px;
+  .preview-header {
+    padding: 12px 16px;
+  }
+  
+  .preview-title {
+    font-size: 14px;
+  }
+  
+  .preview-body {
+    padding: 16px;
   }
   
   .code-pre {
+    padding: 16px;
     font-size: 12px;
-    padding: 12px;
+  }
+  
+  .unsupported {
+    padding: 40px 16px;
+  }
+}
+
+/* 动画 */
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  0% {
+    transform: scale(0.9) translateY(-20px);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
   }
 }
 </style>
